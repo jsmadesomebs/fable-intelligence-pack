@@ -1,0 +1,11 @@
+{
+  "name": "fable-intelligence",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Anthropic API patterns + decision heuristics extracted from Fable 5",
+  "main": "src/lib/index.js",
+  "scripts": {
+    "demo": "node src/example-app.js",
+    "test": "node src/example-app.js"
+  }
+}
