@@ -7,9 +7,5 @@
   "scripts": {
     "demo": "node src/example-app.js",
     "test": "node src/example-app.js"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0",
-    "zod": "^3.23.0"
   }
 }
