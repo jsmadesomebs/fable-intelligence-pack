@@ -51,6 +51,23 @@ class AnthropicClient {
 
     if (options.system) body.system = options.system;
     if (options.tools?.length) body.tools = options.tools;
+    if (options.toolChoice) body.tool_choice = options.toolChoice;
+    if (options.speed) body.speed = options.speed;
+    if (options.serviceTier) body.service_tier = options.serviceTier;
+    if (options.stopSequences) body.stop_sequences = options.stopSequences;
+    if (options.metadata) body.metadata = options.metadata;
+    if (options.container) body.container = options.container;
+    if (options.fallbackCreditToken) body.fallback_credit_token = options.fallbackCreditToken;
+    if (options.compaction) {
+      // options.compaction === true → defaults; or pass a config object
+      // (trigger/instructions/pause_after_compaction) merged onto the edit.
+      const cfg = typeof options.compaction === "object" ? options.compaction : {};
+      const edits = body.context_management?.edits || [];
+      body.context_management = {
+        ...body.context_management,
+        edits: [...edits, { type: "compact_20260112", ...cfg }],
+      };
+    }
     if (options.stream) body.stream = true;
 
     if (options.thinking !== undefined) {
@@ -62,6 +79,11 @@ class AnthropicClient {
     if (options.effort) {
       body.output_config = { ...body.output_config, effort: options.effort };
     }
+    if (options.taskBudget) {
+      // Model-aware token budget for full agentic loops (Fable 5 / Opus 4.7+).
+      // e.g. { type: "tokens", total: 128000 } — minimum 20,000.
+      body.output_config = { ...body.output_config, task_budget: options.taskBudget };
+    }
     if (options.outputFormat) {
       body.output_config = { ...body.output_config, format: options.outputFormat };
     }
@@ -70,8 +92,13 @@ class AnthropicClient {
     }
 
     const headers = { ...this.baseHeaders };
-    if (options.betas?.length) {
-      headers["anthropic-beta"] = options.betas.join(",");
+    const betas = [...(options.betas || [])];
+    if (options.taskBudget) betas.push("task-budgets-2026-03-13");
+    if (options.speed === "fast") betas.push("fast-mode-2026-02-01");
+    if (options.compaction) betas.push("compact-2026-01-12");
+    if (options.fallbackCreditToken) betas.push("fallback-credit-2026-06-01");
+    if (betas.length) {
+      headers["anthropic-beta"] = betas.join(",");
     }
 
     if (options.fallbacks) {
@@ -235,6 +262,30 @@ class MessageResponse {
 
   get stopDetails() {
     return this.raw.stop_details || null;
+  }
+
+  // True when a refusal was re-served by a fallback model (server-side fallback).
+  get servedByFallback() {
+    const its = this.raw.usage?.iterations;
+    return Array.isArray(its)
+      && its.some(i => i.type === "fallback_message")
+      && this.raw.stop_reason !== "refusal";
+  }
+
+  // Present on a refusal when a fallback credit is available; null otherwise.
+  // prefillClaim true → retry by appending one assistant continuation;
+  // false → resend the body unchanged. (See fallback-credit docs.)
+  get fallbackCredit() {
+    const d = this.raw.stop_details || {};
+    return d.fallback_credit_token
+      ? { token: d.fallback_credit_token, prefillClaim: d.fallback_has_prefill_claim }
+      : null;
+  }
+
+  // The server-side compaction summary block, if compaction ran this turn.
+  get compactionContent() {
+    const block = (this.raw.content || []).find(b => b.type === "compaction");
+    return block ? block.content : null;
   }
 
   get usage() {

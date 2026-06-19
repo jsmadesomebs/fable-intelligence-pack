@@ -9,7 +9,7 @@ class ToolBuilder {
     this.executors = new Map();
   }
 
-  add(name, description, schema, handler) {
+  add(name, description, schema, handler, options = {}) {
     const required = Object.entries(schema)
       .filter(([_, v]) => !v.optional)
       .map(([k]) => k);
@@ -20,7 +20,7 @@ class ToolBuilder {
       properties[key] = rest;
     }
 
-    this.tools.push({
+    const tool = {
       name,
       description,
       input_schema: {
@@ -28,7 +28,14 @@ class ToolBuilder {
         properties,
         required,
       },
-    });
+    };
+    // strict: true guarantees tool inputs conform to the schema (constrained
+    // decoding). Pairs with forced tool use for guaranteed + valid calls.
+    if (options.strict) tool.strict = true;
+    // defer_loading keeps the tool out of the prompt until tool search finds it
+    // (preserves prompt cache; lets you scale to large tool catalogs).
+    if (options.defer) tool.defer_loading = true;
+    this.tools.push(tool);
 
     if (handler) this.executors.set(name, handler);
     return this;
@@ -36,9 +43,25 @@ class ToolBuilder {
 
   addWebSearch() {
     this.tools.push({
-      type: "web_search_20250305",
+      type: "web_search_20260209",
       name: "web_search",
     });
+    return this;
+  }
+
+  // Pair a faster executor with a higher-IQ advisor consulted mid-generation.
+  // Requires the beta header "advisor-tool-2026-03-01" on the request.
+  addAdvisor(advisorModel = "claude-opus-4-8") {
+    this.tools.push({ type: "advisor_20260301", name: "advisor", model: advisorModel });
+    return this;
+  }
+
+  // Lazy-load a large tool catalog. Mark deferred tools with { defer: true } on add().
+  addToolSearch(variant = "regex") {
+    const type = variant === "bm25"
+      ? "tool_search_tool_bm25_20251119"
+      : "tool_search_tool_regex_20251119";
+    this.tools.push({ type, name: type.replace(/_\d+$/, "") });
     return this;
   }
 
@@ -57,7 +80,7 @@ class ToolBuilder {
   }
 }
 
-function defineTool(name, description, params) {
+function defineTool(name, description, params, options = {}) {
   const required = [];
   const properties = {};
 
@@ -67,11 +90,13 @@ function defineTool(name, description, params) {
     if (isRequired) required.push(key);
   }
 
-  return {
+  const tool = {
     name,
     description,
     input_schema: { type: "object", properties, required },
   };
+  if (options.strict) tool.strict = true;
+  return tool;
 }
 
 function defineEnum(name, description, paramName, values) {
@@ -81,7 +106,7 @@ function defineEnum(name, description, paramName, values) {
 }
 
 const COMMON_TOOLS = {
-  webSearch: { type: "web_search_20250305", name: "web_search" },
+  webSearch: { type: "web_search_20260209", name: "web_search" },
 
   calculator: defineTool("calculator", "Evaluate a math expression", {
     expression: { type: "string", description: "Math expression to evaluate" },

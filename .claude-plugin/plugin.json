@@ -1,0 +1,6 @@
+{
+  "name": "fable-intelligence",
+  "version": "1.0.0",
+  "description": "Fable 5 / Anthropic API reference (fable-intelligence), Fable-grade behavioral guidelines (fable-brain), and model-routing + capability heuristics (fable-grade). Verified against primary docs, June 2026. Skills load into context with no API key.",
+  "author": { "name": "justmadesomebs" }
+}

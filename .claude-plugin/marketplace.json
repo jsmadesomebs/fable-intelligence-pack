@@ -1,0 +1,17 @@
+{
+  "name": "fable-stack",
+  "owner": {
+    "name": "justmadesomebs",
+    "email": "jscreatingstuff@proton.me"
+  },
+  "description": "Fable 5 / Anthropic API skills and helpers for Claude Code.",
+  "plugins": [
+    {
+      "name": "fable-intelligence",
+      "source": "./",
+      "description": "Fable 5 / Anthropic API reference (fable-intelligence), Fable-grade behavioral guidelines (fable-brain), and model-routing + capability heuristics (fable-grade). Three key-free skills plus an optional no-network MCP helper server.",
+      "version": "1.0.0",
+      "author": { "name": "justmadesomebs" }
+    }
+  ]
+}

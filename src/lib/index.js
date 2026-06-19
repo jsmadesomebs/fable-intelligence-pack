@@ -12,5 +12,7 @@
 export { AnthropicClient, MessageResponse, AnthropicError, MODELS, PRICING, EFFORT_LEVELS, DEFAULT_MODEL } from "./anthropic-client.js";
 export { ToolBuilder, defineTool, defineEnum, COMMON_TOOLS } from "./tool-builder.js";
 export { Conversation, GameState } from "./conversation.js";
+export { forceTool, isAlwaysThinking } from "./forced-tool.js";
+export { pickModel, maxCapability, FABLE_GRADE_SYSTEM, OPUS_FALLBACK_DOMAINS } from "./capability.js";
 export { fileToBase64, detectMediaType, imageBlock, documentBlock, imageUrl, buildMultimodalMessage } from "./multimodal.js";
 export { classifyQuery, classifyOutputFormat, shouldSearchEntity, scaleTools, formatResponse } from "./decision-engine.js";
